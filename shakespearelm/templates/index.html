@@ -1,0 +1,102 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>AI Shakespearean Insult Generator</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'shakespearelm/css/style.css' %}">
+</head>
+
+<body>
+
+    <h1 style="text-align: center;">AI Shakespearean<br/>Insult Generator</h1>
+    <p>Powered by <a href="https://huggingface.co/collections/allenai/olmo-2-674117b93ab84e98afc72edc" style="color:#FFFACD">OLMo V2 7B</a> from <a href="https://www.allenai.org" style="color:#FFFACD">AI2</a>. Running on dual NVIDIA GTX 1660 S.</p>
+    <span>Insult my:</span>
+    <select name="insult" id="insult-select">
+        <option value="">Select...</option>
+        <option value="0">Fashion Sense</option>
+        <option value="1">Inflated Ego</option>
+        <option value="2">Hair Style</option>
+        <option value="3">Intellect</option>
+        <option value="4">Physical Prowess</option>
+        <option value="5">Social Skills</option>
+        <option value="6">Charisma</option>
+        <option value="7">Cooking Skills</option>
+        <option value="8">Taste in LLMs</option>
+    </select>
+    <button type="button" id="submit" disabled>Let's Go</button>
+
+    <div id="generating" style="text-align: center; display: none">
+        <h3>Generating...</h3>
+        <img src="{% static 'shakespearelm/images/loading.gif' %}" alt="Loading...">
+    </div>
+    <div id="generated-content" style="display:none">
+        <h2 id="insult-title">Generated Insult:</h2>
+        <p id="insult-content"></p>
+        <div style="margin-bottom:10px">
+            <button type="button" id="show-prompt-link" style="background-color: black;">Show Prompt</button>
+        </div>
+        <div id="prompt" style="display:none">
+            <p id="prompt-content"></p>
+        </div>
+        <div>
+            <button type="button" id="try-another">Try Another</button>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        function ajaxCall(data, postUrl) {
+            $.ajax({
+                type: "POST",
+                url: postUrl,
+                data: {
+                    'data': data,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}'
+                },
+                dataType: "json",
+                success: function (response) {
+                    content = response.content.replaceAll('\\n', '<br>');
+                    content = content.replaceAll('\\"', '"');
+                    $('#insult-content').html(content);
+                    $('#generating').hide();
+                    $('#generated-content').show();
+                    $('#prompt-content').html(response.prompt);
+                }
+            });
+        }
+
+        $('#submit').click(function () {
+            $('#insult-select').attr("disabled", true);
+            $('#submit').attr("disabled", true);
+            $('#generating').show();
+            ajaxCall($("#insult-select").val(), "ajax/generate");
+        })
+
+        $("#insult-select").on('change', function () {
+            $('#insult-select option:first').remove();
+            $('#submit').attr("disabled", false);
+        });
+
+        $('#show-prompt-link').click(function () {
+            $('#prompt').show();
+            $('#show-prompt-link').attr("disabled", true);
+        })
+
+        $('#try-another').click(function () {
+            var newOption = $("<option></option>").val("").text("Select...");
+            $("#insult-select").prepend(newOption);
+            $("#insult-select").val("");
+            $('#insult-select').attr("disabled", false);
+            $('#submit').attr("disabled", true);
+            $('#generated-content').hide();
+            $('#prompt').hide();
+            $('#show-prompt-link').attr("disabled", false);
+            $('#insult-content').html('');
+        })
+    </script>
+
+
+</body>
+
+</html>
